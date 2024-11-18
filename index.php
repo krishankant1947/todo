@@ -1,11 +1,30 @@
 <?php
 require "config.php";
+$edit_data=[];
 $array=array();
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
 $sql= "insert into todo(name) value(?)";
 $stmt=$pdo->prepare($sql);
 $stmt->execute([$_POST['todolist']]);
+header('location:index.php');
+die;
 }
+if(!empty($_GET['action'])){
+    if($_GET['action']=='edit'){
+        $id=$_GET['id'];
+        $sql="select * from todo where name=?";
+        $stmt=$pdo->prepare($sql);
+        $stmt->execute([$id]);
+        $edit_data=$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    else {
+        $sql="delete from todo where id=?";
+        $stmt=$pdo->prepare($sql);
+        $stmt->execute([$_GET['id']]);
+        header("location:index.php");
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,11 +34,16 @@ $stmt->execute([$_POST['todolist']]);
     <title>Document</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" 
     integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" 
+    integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style type="text/css">
         .todo{
             background-image: url(background.jpg);
             background-size: cover;
             color: white;
+        }
+        .table-striped>tbody>tr:nth-of-type(odd)>*{
+            background-color: #e9ecef;
         }
         .todolist{
             background-color: white;
@@ -44,36 +68,37 @@ $stmt->execute([$_POST['todolist']]);
            
             <main class="m-3">
                 <div class="row my-2">
-                    <div class="col-12">
-                        <input type="text" name="todolist" class="form-control" id="todo" placeholder="....">
+                    <div class="col-9">
+                        <input type="text" name="todolist" class="form-control" id="todo" placeholder="...." >
+                    </div>
+                    <div class="col-3">
+                    <button type="submit" class="btn btn-outline-success">submit</button>
                     </div>
                 </div>
             </main>
-           
-                <ul>
-                    <li>
-                        <label for="completecheckbox1">complete checkbox</label>
-                        <input type="checkbox" name="complete_checkbox" checked id="completecheckbox1">
-                    </li>
-                    <li>
-                        <label for="completecheckbox2">complete checkbox</label>
-                        <input type="checkbox" name="complete_checkbox" checked id="completecheckbox2">
-                    </li>
-                    <li>
-                        <label for="completecheckbox3">complete checkbox</label>
-                        <input type="checkbox" name="complete_checkbox" checked id="completecheckbox3">
-                    </li>
-                    <li>
-                        <label for="completecheckbox4">complete checkbox</label>
-                        <input type="checkbox" name="complete_checkbox" checked id="completecheckbox4">
-                    </li>
-                    <li>
-                        <label for="completecheckbox5">complete checkbox</label>
-                        <input type="checkbox" name="complete_checkbox" checked id="completecheckbox5">
-                    </li>
-                </ul>
+            <div style="height: 200px; overflow:auto" class="mb-3">
+            <table class="table table-striped ">
+                <?php
+                $sql="select * from todo";
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute();
+                $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+                // print_r($rows);
+                foreach ($rows as $row) {
+                    echo <<<TODO
+                    <tr>
+                        <td>{$row['name']}</td>
+                        <td class="text-end" ><a href="index.php?action=delete&id={$row['id']}"><button class="btn btn-danger ">DELETE</button></a>
+                        <a href=""></a></td>
+                    </tr>
+                    TODO;
+                }
+
+
+?></table>
+            </div>
                 <div>
-                    <button type="submit" class="btn btn-outline-success">submit</button>
+                    
                 </div>
             </section>
         </div>
