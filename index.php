@@ -1,21 +1,18 @@
 <?php
 require "config.php";
-$edit_data=[];
 $array=array();
-if($_SERVER['REQUEST_METHOD'] == 'POST'){
-$sql= "insert into todo(name) value(?)";
-$stmt=$pdo->prepare($sql);
-$stmt->execute([$_POST['todolist']]);
-header('location:index.php');
-die;
-}
+$edit_data=[];
+
+
 if(!empty($_GET['action'])){
     if($_GET['action']=='edit'){
+        echo "rjvfckm";
         $id=$_GET['id'];
         $sql="select * from todo where name=?";
         $stmt=$pdo->prepare($sql);
         $stmt->execute([$id]);
         $edit_data=$stmt->fetch(PDO::FETCH_ASSOC);
+        var_dump($edit_data);
     }
     else {
         $sql="delete from todo where id=?";
@@ -24,6 +21,8 @@ if(!empty($_GET['action'])){
         header("location:index.php");
     }
 }
+
+
 
 ?>
 <!DOCTYPE html>
@@ -63,9 +62,26 @@ if(!empty($_GET['action'])){
         </div>
     </header>
     <section class="todolist">
+    
     <div class="row">
         <div class="col-4 offset-4 border border-secondary bg-warning-subtle ">
-           
+        <?php
+            if($_SERVER['REQUEST_METHOD'] == 'POST'){
+                if(empty($_POST['todolist'])){
+                echo "<pre>";
+               echo "<div class='alert alert-anger'>cdbjnx</div>";
+               echo "</pre>";
+                 $sql= "update todo where id=?";
+            }
+               else{
+                $sql="insert into todo(name) value(?)";
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute([$_POST['todolist']]);
+                header('location:index.php');
+               }
+            
+            }
+            ?>
             <main class="m-3">
                 <div class="row my-2">
                     <div class="col-9">
@@ -88,7 +104,7 @@ if(!empty($_GET['action'])){
                     echo <<<TODO
                     <tr>
                         <td>{$row['name']}</td>
-                        <td class="text-end" ><a href="index.php?action=delete&id={$row['id']}"><button class="btn btn-danger ">DELETE</button></a>
+                        <td class="text-end" ><a href="index.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-danger ">DELETE</button></a>
                         <a href=""></a></td>
                     </tr>
                     TODO;
