@@ -1,18 +1,28 @@
 <?php
 require "config.php";
+// $sql="select * from tags";
+// $stmt=$pdo->prepare($sql);
+// $stmt->execute($_POST['tag']);
+// $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+// header('location:index.php');
+
+// $sql="delete from tags";
+// $stmt=$pdo->prepare($sql);
+// $stmt->execute();
+// ?><?php
 $array=array();
 $edit_data=[];
 
                 if($_SERVER['REQUEST_METHOD'] == 'POST'){
-                    if(empty($_POST['todomanager'])){
+                    if(empty($_POST['tags'])){
                         $array[]="enter your detaile";
                         
                     }
                     if(empty($array)){
-                        $sql="insert into todomanager(title) value(?)";
+                        $sql="insert into tags(title) value(?)";
                         $stmt=$pdo->prepare($sql);
-                        $stmt->execute([$_POST['todomanager']]);
-                        header('location:todomanager1.php');
+                        $stmt->execute([$_POST['tags']]);
+                        header('location:tags.php');
                     }
                     }
                     
@@ -20,16 +30,16 @@ $edit_data=[];
 if(!empty($_GET['action'])){
     if($_GET['action']=='edit'){
         $id=$_GET['id'];
-        $sql="select * from todomanager where title=?";
+        $sql="select * from tags where title=?";
         $stmt=$pdo->prepare($sql);
         $stmt->execute([$id]);
         $edit_data=$stmt->fetch(PDO::FETCH_ASSOC);
     }
     else{
-        $sql="delete from todomanager where id=?";
+        $sql="delete from tags where id=?";
         $stmt=$pdo->prepare($sql);
         $stmt->execute([$_GET['id']]);
-        header("location:todomanager1.php");
+        header("location:tags.php");
     }
 
 }
@@ -50,7 +60,7 @@ if(!empty($_GET['action'])){
             background-image: url(background.jpg);
             color:white;
         }
-        .todomanager{
+        .tags{
             background-color: #8ecae6;
     ;    }
     </style>
@@ -60,7 +70,7 @@ if(!empty($_GET['action'])){
     <header class="todo_manager ">
         <div class="row">
             <div class="col-6 m-4 text-end ">
-                <h2 class="">TODO_MANAGER</h2>
+                <h2 class="">Tags</h2>
             </div>
             <div class="col-6">
                 <img src="">
@@ -70,7 +80,7 @@ if(!empty($_GET['action'])){
        
        <div class="row my-4">
             <div class="col-4 offset-4 border border-secondary shadow-lg p-3 mb-5 bg-body-tertiary rounded ">
-            <section class="todomanager">
+            <section class="tags">
                 <?php
                 if(!empty($array)){
                     echo '<div class="alert alert-danger my-3">empty values are not allowed</div>';
@@ -78,7 +88,7 @@ if(!empty($_GET['action'])){
                 ?>
                 <div class="row m-3">
                     <div class="col-9 ">
-                        <input type="text" name="todomanager" class="form-control" id="todo_manager">
+                        <input type="text" autofocus name="tags" class="form-control" id="todo_manager">
                     </div>
                     <div class="col-3">
                         <button type="submit" class="btn btn-outline-success">submit</button>
@@ -87,7 +97,7 @@ if(!empty($_GET['action'])){
        </section>
                <table  class="table table-striped">
                <?php
-                $sql="select * from todomanager";
+                $sql="select * from tags";
                 $stmt=$pdo->prepare($sql);
                 $stmt->execute();
                 $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -96,7 +106,7 @@ if(!empty($_GET['action'])){
                 echo<<<MANAGER
                     <tr>
                         <td>{$row['title']}</td>
-                        <td class="text-end my-3"><a href="todomanager1.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-info ">DELETE</button></a>
+                        <td class="text-end my-3"><a href="tags.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-info ">DELETE</button></a>
                         <a href=""></a></td>
                     </tr>
                 MANAGER;

@@ -3,7 +3,36 @@ require "config.php";
 $array=array();
 $edit_data=[];
 
+$message = '';
+if($_SERVER['REQUEST_METHOD'] == 'POST'){
+    if(empty($_POST['todolist'])){
+        $message = "<div class='alert alert-anger'>cdbjnx</div>";
+    }else{
+        echo '<pre>';
+        print_r($_POST);
+        // die;
+        $sql="insert into todo(name) value(?)";
+        $stmt=$pdo->prepare($sql);
+        $stmt->execute([$_POST['todolist']]);
 
+        echo $todo_id = $pdo->lastInsertId();
+        $tag_ids = $_POST['tags'];
+
+        $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
+        foreach($tag_ids as $tag_id){
+
+            $stmt=$pdo->prepare($sql);
+            $stmt->execute([
+                'tag_id'=> $tag_id,
+                'todo_id'=> $todo_id
+            ]);
+        }
+
+
+        header('location:index.php');
+   }
+
+}
 if(!empty($_GET['action'])){
     if($_GET['action']=='edit'){
         echo "rjvfckm";
@@ -21,10 +50,8 @@ if(!empty($_GET['action'])){
         header("location:index.php");
     }
 }
-
-
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,45 +92,59 @@ if(!empty($_GET['action'])){
     
     <div class="row">
         <div class="col-4 offset-4 border border-secondary bg-warning-subtle ">
-        <?php
-            if($_SERVER['REQUEST_METHOD'] == 'POST'){
-                if(empty($_POST['todolist'])){
-                echo "<pre>";
-               echo "<div class='alert alert-anger'>cdbjnx</div>";
-               echo "</pre>";
-                 $sql= "update todo where id=?";
-            }
-               else{
-                $sql="insert into todo(name) value(?)";
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute([$_POST['todolist']]);
-                header('location:index.php');
-               }
-            
-            }
-            ?>
+            <?php echo $message; ?>
             <main class="m-3">
                 <div class="row my-2">
                     <div class="col-9">
-                        <input type="text" name="todolist" class="form-control" id="todo" placeholder="...." >
+                        <label for="todo">Todo</label>
+                        <input type="text" name="todolist" class="form-control" id="todo" value="<?php echo empty($_POST['todolist']) ? '' : $_POST['todolist'];?>" placeholder="...." >
                     </div>
                     <div class="col-3">
                     <button type="submit" class="btn btn-outline-success">submit</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">               
+                          <label for="tags">Tags</label>
+                        <select size="5" multiple name="tags[]" class="form-control" id="tags">
+                             <option value="">-- select -- </option>
+ <?php            $sql="select * from tags";
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute();
+                $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                foreach($rows as $row)
+                echo<<<MANAGER
+
+                        <option value="{$row['id']}">{$row['title']}</a>
+
+                MANAGER;
+                ?></select>
                     </div>
                 </div>
             </main>
             <div style="height: 200px; overflow:auto" class="mb-3">
             <table class="table table-striped ">
                 <?php
-                $sql="select * from todo";
+                // $sql="select * from todo";
+                $sql = 'SET sql_mode = ""';
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute();
+                $sql="select todo.*,group_concat(t.id) as tag_id , group_concat(t.title) as tag_title  from 
+                    todo left join tags_todo ON(todo.id=tags_todo.todo_id)
+                    left join tags t ON(t.id=tags_todo.tags_id)
+                    group by todo.id
+                   
+                    ";
                 $stmt=$pdo->prepare($sql);
                 $stmt->execute();
                 $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
-                // print_r($rows);
+// echo '<pre>';
+//                 print_r($rows);die;
                 foreach ($rows as $row) {
                     echo <<<TODO
                     <tr>
-                        <td>{$row['name']}</td>
+                        <td>{$row['name']} <small>{$row['tag_title']}</small></td>
                         <td class="text-end" ><a href="index.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-danger ">DELETE</button></a>
                         <a href=""></a></td>
                     </tr>
