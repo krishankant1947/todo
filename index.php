@@ -9,39 +9,72 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
         $message = "<div class='alert alert-anger'>cdbjnx</div>";
     }else{
         echo '<pre>';
-        print_r($_POST);
+        // print_r($_POST);
         // die;
-        $sql="insert into todo(name) value(?)";
-        $stmt=$pdo->prepare($sql);
-        $stmt->execute([$_POST['todolist']]);
-
-        echo $todo_id = $pdo->lastInsertId();
-        $tag_ids = $_POST['tags'];
-
-        $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
-        foreach($tag_ids as $tag_id){
-
+        if(empty($_GET['id'])){
+            $sql="insert into todo(name) value(?)";
             $stmt=$pdo->prepare($sql);
-            $stmt->execute([
-                'tag_id'=> $tag_id,
-                'todo_id'=> $todo_id
-            ]);
+            $stmt->execute([$_POST['todolist']]);
+    
+            echo $todo_id = $pdo->lastInsertId();
+            $tag_ids = $_POST['tags'];
+    
+            $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
+            foreach($tag_ids as $tag_id){
+    
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute([
+                    'tag_id'=> $tag_id,
+                    'todo_id'=> $todo_id
+                ]);
+            }
+        }
+        else{
+            $id=$_GET['id'];
+            $sql="update todo set name=? where id=?";
+            $stmt=$pdo->prepare($sql);
+            $stmt->execute([$_POST['todolist'] ,$id] );
+
+            $tag_unlink_stmt = $pdo->prepare('delete from tags_todo where todo_id=?');
+            $tag_unlink_stmt->execute([$id]);
+            $tag_ids = $_POST['tags'];
+
+            $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
+            foreach($tag_ids as $tag_id){
+
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute([
+                    'tag_id'=> $tag_id,
+                    'todo_id'=> $id
+                ]);
+            }
         }
 
 
         header('location:index.php');
+        die;
    }
-
+   if(empty($array)){
+    if(empty($_GET['id'])==false){
+        $sql="update todo set name=? where id=?";
+    }
+    else{
+        $sql="insert into todo(name) value(?)";
+        $stmt=$pdo->prepare($sql);
+        $stmt->execute([$_POST['todolist']]);
+    }
+    header('location:index.php');
+    die;
+   }
 }
 if(!empty($_GET['action'])){
     if($_GET['action']=='edit'){
         echo "rjvfckm";
         $id=$_GET['id'];
-        $sql="select * from todo where name=?";
+        $sql="select name as todolist from todo where id=?";
         $stmt=$pdo->prepare($sql);
         $stmt->execute([$id]);
-        $edit_data=$stmt->fetch(PDO::FETCH_ASSOC);
-        var_dump($edit_data);
+        $_POST=$stmt->fetch(PDO::FETCH_ASSOC);
     }
     else {
         $sql="delete from todo where id=?";
@@ -97,7 +130,9 @@ if(!empty($_GET['action'])){
                 <div class="row my-2">
                     <div class="col-9">
                         <label for="todo">Todo</label>
-                        <input type="text" name="todolist" class="form-control" id="todo" value="<?php echo empty($_POST['todolist']) ? '' : $_POST['todolist'];?>" placeholder="...." >
+                        <input type="text" name="todolist" class="form-control" id="todo" value="<?php echo empty($_POST['todolist']) ? '' : $_POST['todolist'];
+
+                        ?>" placeholder="...." >
                     </div>
                     <div class="col-3">
                     <button type="submit" class="btn btn-outline-success">submit</button>
@@ -113,12 +148,23 @@ if(!empty($_GET['action'])){
                 $stmt->execute();
                 $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                foreach($rows as $row)
+                $sql="select tags_id from tags_todo where todo_id =?";
+                $stmt=$pdo->prepare($sql);
+                $stmt->execute([$_GET['id']]);
+                $COL=$stmt->fetchAll(PDO::FETCH_COLUMN,0);
+                var_dump($COL);
+                foreach($rows as $row){
+                    $isselected= in_array($row['id'], $COL );
+                    $selected_text = '';
+                    if($isselected){
+                        $selected_text = " selected ";
+                    }
                 echo<<<MANAGER
 
-                        <option value="{$row['id']}">{$row['title']}</a>
+                        <option value="{$row['id']}" {$selected_text}>{$row['title']}</a>
 
                 MANAGER;
+                }
                 ?></select>
                     </div>
                 </div>
@@ -145,8 +191,9 @@ if(!empty($_GET['action'])){
                     echo <<<TODO
                     <tr>
                         <td>{$row['name']} <small>{$row['tag_title']}</small></td>
-                        <td class="text-end" ><a href="index.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-danger ">DELETE</button></a>
-                        <a href=""></a></td>
+                        <td class="text-end" ><a href="index.php?action=edit&id={$row['id']}"><i class="fa-regular fa-pen-to-square"></i></a>
+                        <a href="index.php?action=delete&id={$row['id']}"><button type="button" class="btn btn-danger ">DELETE</button></a>
+                        </td>
                     </tr>
                     TODO;
                 }
