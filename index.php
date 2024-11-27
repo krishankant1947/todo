@@ -3,30 +3,62 @@ require "config.php";
 $array=array();
 $edit_data=[];
 
+
+printstar($char="*", $count=5){
+
+};
+printstar();
+printstar("X", 10);
+
+function executeSql(string $sql, array $params = [], bool $debug = false) :mixed {
+    global $pdo;
+    $stmt=$pdo->prepare($sql);
+    if($debug){
+        echo $sql;
+    }
+    $stmt->execute($params);
+
+    if( stripos($sql, "SELECT") !== false){
+        if( stripos($sql, "LIMIT 1") !== false){
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } else {
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }elseif(stripos($sql, "INSERT") !== false){
+        return $pdo->lastInsertId();
+    }
+    return true;
+}
+function dd($data): void{
+    echo '<pre>';
+    var_dump($data);
+    echo '</pre>';
+}
 $message = '';
+
+// $data = executeSql('select * from todo order by id desc LIMIT 1', [], true);
+// $data = executeSql('select * from todo where id=20 LIMIT 1',[], true);
+// $data = executeSql('select * from todo where id=20 LIMIT 1', debug: true);
+// dd(executeSql(
+//     params: ["vipan"],
+//     sql: "insert into todo(name) value(?)",
+// ));
+// dd($data);
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
     if(empty($_POST['todolist'])){
-        $message = "<div class='alert alert-anger'>cdbjnx</div>";
+        $message = "<div class='alert alert-danger'>Empty todo not Allow</div>";
     }else{
-        echo '<pre>';
-        // print_r($_POST);
-        // die;
+
         if(empty($_GET['id'])){
-            $sql="insert into todo(name) value(?)";
-            $stmt=$pdo->prepare($sql);
-            $stmt->execute([$_POST['todolist']]);
-    
-            echo $todo_id = $pdo->lastInsertId();
+
+            $todo_id = executeSql("insert into todo(name) value(?)", [$_POST['todolist']]);
             $tag_ids = $_POST['tags'];
-    
-            $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
             foreach($tag_ids as $tag_id){
-    
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute([
+                executeSql("insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)",[
                     'tag_id'=> $tag_id,
                     'todo_id'=> $todo_id
                 ]);
+
             }
         }
         else{
@@ -37,8 +69,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 
             $tag_unlink_stmt = $pdo->prepare('delete from tags_todo where todo_id=?');
             $tag_unlink_stmt->execute([$id]);
-            $tag_ids = $_POST['tags'];
 
+
+            $tag_ids = $_POST['tags'];
             $sql = "insert into tags_todo(tags_id, todo_id) value(:tag_id, :todo_id)";
             foreach($tag_ids as $tag_id){
 
@@ -49,37 +82,16 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 ]);
             }
         }
-
-
         header('location:index.php');
         die;
-   }
-   if(empty($array)){
-    if(empty($_GET['id'])==false){
-        $sql="update todo set name=? where id=?";
-    }
-    else{
-        $sql="insert into todo(name) value(?)";
-        $stmt=$pdo->prepare($sql);
-        $stmt->execute([$_POST['todolist']]);
-    }
-    header('location:index.php');
-    die;
    }
 }
 if(!empty($_GET['action'])){
     if($_GET['action']=='edit'){
-        echo "rjvfckm";
-        $id=$_GET['id'];
-        $sql="select name as todolist from todo where id=?";
-        $stmt=$pdo->prepare($sql);
-        $stmt->execute([$id]);
-        $_POST=$stmt->fetch(PDO::FETCH_ASSOC);
+        $_POST = executeSql('select name as todolist from todo where id=? LIMIT 1',[$_GET['id']] );
     }
     else {
-        $sql="delete from todo where id=?";
-        $stmt=$pdo->prepare($sql);
-        $stmt->execute([$_GET['id']]);
+        $data= executeSql('delete from todo where id=?',[$_GET['id']]);
         header("location:index.php");
     }
 }
@@ -143,48 +155,35 @@ if(!empty($_GET['action'])){
                           <label for="tags">Tags</label>
                         <select size="5" multiple name="tags[]" class="form-control" id="tags">
                              <option value="">-- select -- </option>
- <?php            $sql="select * from tags";
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute();
-                $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                $sql="select tags_id from tags_todo where todo_id =?";
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute([$_GET['id']]);
-                $COL=$stmt->fetchAll(PDO::FETCH_COLUMN,0);
-                var_dump($COL);
-                foreach($rows as $row){
-                    $isselected= in_array($row['id'], $COL );
-                    $selected_text = '';
-                    if($isselected){
-                        $selected_text = " selected ";
-                    }
-                echo<<<MANAGER
+                            <?php 
+                                $rows=executeSql('select * from tags',[]);
+                                $COL= executeSql('select group_concat(tags_id) ii from tags_todo where todo_id =? limit 1',[$_GET['id']]);
+                                $COL = explode(",", $COL['ii']);  
+                                foreach($rows as $row){
+                                    $isselected= in_array($row['id'], $COL );
+                                    $selected_text = '';
+                                    if($isselected){
+                                        $selected_text = " selected ";
+                                    }
+                                echo<<<MANAGER
 
-                        <option value="{$row['id']}" {$selected_text}>{$row['title']}</a>
+                                        <option value="{$row['id']}" {$selected_text}>{$row['title']}</a>
 
-                MANAGER;
-                }
-                ?></select>
+                                MANAGER;
+                                }
+                            ?>
+                        </select>
                     </div>
                 </div>
             </main>
             <div style="height: 200px; overflow:auto" class="mb-3">
             <table class="table table-striped ">
                 <?php
-                // $sql="select * from todo";
-                $sql = 'SET sql_mode = ""';
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute();
-                $sql="select todo.*,group_concat(t.id) as tag_id , group_concat(t.title) as tag_title  from 
+                $data=executeSql('SET sql_mode = ""',[]);
+                $rows=executeSql('select todo.*,group_concat(t.id) as tag_id , group_concat(t.title) as tag_title  from 
                     todo left join tags_todo ON(todo.id=tags_todo.todo_id)
                     left join tags t ON(t.id=tags_todo.tags_id)
-                    group by todo.id
-                   
-                    ";
-                $stmt=$pdo->prepare($sql);
-                $stmt->execute();
-                $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+                    group by todo.id');
 // echo '<pre>';
 //                 print_r($rows);die;
                 foreach ($rows as $row) {
